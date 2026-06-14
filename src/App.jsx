@@ -2,17 +2,22 @@ import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 
 const COLORS = {
-  bg: "#0F1117",
-  panel: "#1A1D2E",
-  panelBorder: "#2A2D3E",
-  cardBg: "#1E2130",
-  blue: "#4F8EF7",
-  yellow: "#F7C94F",
-  green: "#4FD1A5",
-  textPrimary: "#E2E8F0",
-  textSecondary: "#8892A4",
-  textMuted: "#555E6E",
-  inputBg: "#13151F",
+  bg: "#F7F8FA",
+  white: "#FFFFFF",
+  border: "#E4E7ED",
+  panel: "#F0F2F5",
+  blue: "#5B6AF5",
+  blueLight: "#EEF0FE",
+  blueDot: "#5B6AF5",
+  green: "#22C55E",
+  greenLight: "#DCFCE7",
+  yellow: "#F59E0B",
+  yellowLight: "#FEF3C7",
+  red: "#EF4444",
+  textPrimary: "#111827",
+  textSecondary: "#6B7280",
+  textMuted: "#9CA3AF",
+  inputBg: "#FFFFFF",
 };
 
 const CASOS = [
@@ -23,110 +28,137 @@ const CASOS = [
 
 // ─── NODE SHAPES ──────────────────────────────────────────────────────────────
 
-function CircleNode({ x, y, label, color, active, onClick }) {
+function CircleNode({ x, y, label, sublabel, color, filled, active, onClick }) {
   const c = color || COLORS.blue;
   return (
     <g style={{ cursor: "pointer" }} onClick={onClick}>
-      <circle cx={x} cy={y} r={20} fill={active ? c : COLORS.cardBg} stroke={c} strokeWidth={2} />
+      <circle cx={x} cy={y} r={28} fill={active ? c : COLORS.white} stroke={c} strokeWidth={2.5} />
+      {filled && <circle cx={x} cy={y} r={14} fill={c} />}
+      {!filled && <rect x={x - 8} y={y - 8} width={16} height={16} rx={3} fill={active ? COLORS.white : c} />}
       {label && (
-        <text x={x} y={y + 32} textAnchor="middle" fill={COLORS.textSecondary} fontSize={10} fontFamily="JetBrains Mono">
+        <text x={x} y={y + 46} textAnchor="middle" fill={COLORS.textSecondary} fontSize={13} fontFamily="Inter, sans-serif" fontWeight="500">
           {label}
+        </text>
+      )}
+      {sublabel && (
+        <text x={x} y={y + 62} textAnchor="middle" fill={COLORS.textMuted} fontSize={11} fontFamily="Inter, sans-serif">
+          {sublabel}
         </text>
       )}
     </g>
   );
 }
 
-function RectNode({ x, y, w = 68, h = 40, label, color, active, onClick }) {
+function RectNode({ x, y, w = 200, h = 72, label, sublabel, badge, color, active, onClick }) {
   const c = color || COLORS.blue;
   return (
     <g style={{ cursor: "pointer" }} onClick={onClick}>
-      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={5}
-        fill={active ? `${c}22` : COLORS.cardBg} stroke={c} strokeWidth={2} />
-      <text x={x} y={y + 4} textAnchor="middle" fill={COLORS.textPrimary} fontSize={10} fontFamily="JetBrains Mono">
+      {badge && (
+        <text x={x} y={y - h / 2 - 8} textAnchor="middle" fill={COLORS.textMuted} fontSize={10} fontFamily="Inter, sans-serif">
+          • {badge}
+        </text>
+      )}
+      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={10}
+        fill={active ? COLORS.blueLight : COLORS.white}
+        stroke={active ? c : COLORS.border} strokeWidth={active ? 2 : 1.5} />
+      {/* icon */}
+      <rect x={x - w / 2 + 12} y={y - 10} width={18} height={18} rx={4} fill={active ? c : COLORS.blueLight} />
+      <text x={x - w / 2 + 21} y={y + 4} textAnchor="middle" fill={active ? COLORS.white : c} fontSize={11} fontFamily="Inter">■</text>
+      <text x={x - w / 2 + 38} y={y - 4} textAnchor="start" fill={COLORS.textPrimary} fontSize={14} fontFamily="Inter, sans-serif" fontWeight="600">
         {label}
       </text>
+      {sublabel && (
+        <text x={x - w / 2 + 38} y={y + 14} textAnchor="start" fill={COLORS.textMuted} fontSize={10} fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="0.5">
+          {sublabel}
+        </text>
+      )}
+      {label && (
+        <text x={x} y={y + h / 2 + 18} textAnchor="middle" fill={COLORS.textSecondary} fontSize={12} fontFamily="Inter, sans-serif">
+          Servicio
+        </text>
+      )}
     </g>
   );
 }
 
 function DiamondNode({ x, y, label, subLabel, active, onClick }) {
-  const s = 28;
+  const s = 34;
   const points = `${x},${y - s} ${x + s},${y} ${x},${y + s} ${x - s},${y}`;
   return (
     <g style={{ cursor: "pointer" }} onClick={onClick}>
-      <polygon points={points} fill={active ? `${COLORS.yellow}22` : COLORS.cardBg} stroke={COLORS.yellow} strokeWidth={2} />
-      <text x={x} y={y - 3} textAnchor="middle" fill={COLORS.yellow} fontSize={9} fontFamily="JetBrains Mono" fontWeight="bold">{label}</text>
-      {subLabel && <text x={x} y={y + 9} textAnchor="middle" fill={COLORS.textSecondary} fontSize={8} fontFamily="JetBrains Mono">{subLabel}</text>}
+      <polygon points={points}
+        fill={active ? COLORS.yellowLight : COLORS.white}
+        stroke={COLORS.yellow} strokeWidth={2} />
+      <text x={x} y={y - 2} textAnchor="middle" fill={COLORS.yellow} fontSize={11} fontFamily="Inter" fontWeight="700">{label}</text>
+      {subLabel && <text x={x} y={y + 12} textAnchor="middle" fill={COLORS.textSecondary} fontSize={10} fontFamily="Inter">{subLabel}</text>}
     </g>
   );
 }
 
-function Arrow({ x1, y1, x2, y2, label, color }) {
+function DashedArrow({ x1, y1, x2, y2, label, color, vertical }) {
   const c = color || COLORS.textMuted;
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);
   const ux = dx / len, uy = dy / len;
-  const ex = x2 - ux * 9, ey = y2 - uy * 9;
+  const ex = x2 - ux * 10, ey = y2 - uy * 10;
   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
   return (
     <g>
-      <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={c} strokeWidth={1.5} />
-      <polygon points={`${x2},${y2} ${x2 - ux * 9 - uy * 4},${y2 - uy * 9 + ux * 4} ${x2 - ux * 9 + uy * 4},${y2 - uy * 9 - ux * 4}`} fill={c} />
-      {label && <text x={mx} y={my - 7} textAnchor="middle" fill={c} fontSize={9} fontFamily="JetBrains Mono">{label}</text>}
+      <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={c} strokeWidth={1.5} strokeDasharray="5,4" />
+      <polygon points={`${x2},${y2} ${x2 - ux * 10 - uy * 5},${y2 - uy * 10 + ux * 5} ${x2 - ux * 10 + uy * 5},${y2 - uy * 10 - ux * 5}`} fill={c} />
+      {label && <text x={mx + (vertical ? 10 : 0)} y={my + (vertical ? 0 : -8)} textAnchor="middle" fill={c} fontSize={11} fontFamily="Inter">{label}</text>}
     </g>
   );
 }
 
 // ─── DIAGRAMS ─────────────────────────────────────────────────────────────────
 
-function Diagram1({ active, onNodeClick }) {
+function Diagram1({ active, onNodeClick, stats }) {
   const a = active || {};
   return (
-    <svg width="100%" viewBox="0 0 360 100" style={{ overflow: "visible" }}>
-      <Arrow x1={50} y1={50} x2={100} y2={50} />
-      <Arrow x1={168} y1={50} x2={218} y2={50} />
-      <CircleNode x={30} y={50} label="Llegada" active={a.llegada} onClick={() => onNodeClick("llegada")} />
-      <RectNode x={134} y={50} label="Taquilla" active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
-      <CircleNode x={238} y={50} label="Salida" color={COLORS.green} active={a.salida} onClick={() => onNodeClick("salida")} />
+    <svg width="100%" viewBox="0 0 600 160" style={{ overflow: "visible" }}>
+      <DashedArrow x1={88} y1={80} x2={178} y2={80} />
+      <DashedArrow x1={338} y1={80} x2={428} y2={80} />
+      <CircleNode x={60} y={80} label="Llegada de Auto" sublabel={stats ? `${stats.llegadas} autos` : ""} filled active={a.llegada} onClick={() => onNodeClick("llegada")} />
+      <RectNode x={258} y={80} label="Taquilla" sublabel="ACTIVIDAD · 1 SERVIDOR" badge={stats ? `${stats.uso}% uso` : ""} active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
+      <CircleNode x={456} y={80} label="Fin" sublabel={stats ? `${stats.salidas} salidas` : ""} filled={false} color={COLORS.textMuted} active={a.salida} onClick={() => onNodeClick("salida")} />
     </svg>
   );
 }
 
-function Diagram2({ active, onNodeClick }) {
+function Diagram2({ active, onNodeClick, stats }) {
   const a = active || {};
   return (
-    <svg width="100%" viewBox="0 0 520 100" style={{ overflow: "visible" }}>
-      <Arrow x1={50} y1={50} x2={100} y2={50} />
-      <Arrow x1={168} y1={50} x2={218} y2={50} />
-      <Arrow x1={286} y1={50} x2={336} y2={50} />
-      <Arrow x1={404} y1={50} x2={454} y2={50} />
-      <CircleNode x={30} y={50} label="Llegada" active={a.llegada} onClick={() => onNodeClick("llegada")} />
-      <RectNode x={134} y={50} label="Taquilla" active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
-      <RectNode x={252} y={50} label="Revisión" active={a.revision} onClick={() => onNodeClick("revision")} />
-      <RectNode x={370} y={50} label="Entrada" active={a.entrada} onClick={() => onNodeClick("entrada")} />
-      <CircleNode x={474} y={50} label="Sala" color={COLORS.green} active={a.sala} onClick={() => onNodeClick("sala")} />
+    <svg width="100%" viewBox="0 0 820 160" style={{ overflow: "visible" }}>
+      <DashedArrow x1={88} y1={80} x2={158} y2={80} />
+      <DashedArrow x1={318} y1={80} x2={388} y2={80} />
+      <DashedArrow x1={548} y1={80} x2={618} y2={80} />
+      <DashedArrow x1={778} y1={80} x2={820} y2={80} />
+      <CircleNode x={60} y={80} label="Llegada" sublabel={stats ? `${stats.llegadas} ents.` : ""} filled active={a.llegada} onClick={() => onNodeClick("llegada")} />
+      <RectNode x={238} y={80} label="Taquilla" sublabel="ACTIVIDAD · 1 SERVIDOR" badge={stats ? `${stats.uso}% uso` : ""} active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
+      <RectNode x={468} y={80} label="Revisión" sublabel="ACTIVIDAD · 1 SERVIDOR" active={a.revision} onClick={() => onNodeClick("revision")} />
+      <RectNode x={698} y={80} label="Entrada" sublabel="ACTIVIDAD · 1 SERVIDOR" active={a.entrada} onClick={() => onNodeClick("entrada")} />
     </svg>
   );
 }
 
-function Diagram3({ active, onNodeClick }) {
+function Diagram3({ active, onNodeClick, stats }) {
   const a = active || {};
   return (
-    <svg width="100%" viewBox="0 0 540 200" style={{ overflow: "visible" }}>
-      <Arrow x1={50} y1={90} x2={100} y2={90} />
-      <Arrow x1={168} y1={90} x2={218} y2={90} />
-      <Arrow x1={250} y1={62} x2={310} y2={30} label="Sí" color={COLORS.yellow} />
-      <Arrow x1={250} y1={118} x2={310} y2={155} label="No" color={COLORS.textSecondary} />
-      <Arrow x1={384} y1={30} x2={450} y2={30} />
-      <Arrow x1={384} y1={155} x2={450} y2={155} />
-      <CircleNode x={30} y={90} label="Llegada" active={a.llegada} onClick={() => onNodeClick("llegada")} />
-      <RectNode x={134} y={90} label="Taquilla" active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
-      <DiamondNode x={246} y={90} label="XOR" subLabel="¿Dulces?" active={a.gateway} onClick={() => onNodeClick("gateway")} />
-      <RectNode x={347} y={30} w={70} label="Comprar" active={a.comprar} color={COLORS.yellow} onClick={() => onNodeClick("comprar")} />
-      <RectNode x={347} y={155} w={70} label="Ir a sala" active={a.sala} color={COLORS.blue} onClick={() => onNodeClick("sala")} />
-      <CircleNode x={470} y={30} label="Salida A" color={COLORS.green} active={a.salidaA} onClick={() => onNodeClick("salidaA")} />
-      <CircleNode x={470} y={155} label="Salida B" color={COLORS.green} active={a.salidaB} onClick={() => onNodeClick("salidaB")} />
+    <svg width="100%" viewBox="0 0 780 260" style={{ overflow: "visible" }}>
+      <DashedArrow x1={88} y1={130} x2={158} y2={130} />
+      <DashedArrow x1={318} y1={130} x2={388} y2={130} />
+      <DashedArrow x1={424} y1={96} x2={504} y2={50} label="Sí" color={COLORS.yellow} />
+      <DashedArrow x1={424} y1={164} x2={504} y2={210} label="No" color={COLORS.textMuted} />
+      <DashedArrow x1={664} y1={50} x2={720} y2={50} />
+      <DashedArrow x1={664} y1={210} x2={720} y2={210} />
+      <CircleNode x={60} y={130} label="Llegada" sublabel={stats ? `${stats.llegadas} autos` : ""} filled active={a.llegada} onClick={() => onNodeClick("llegada")} />
+      <RectNode x={238} y={130} label="Taquilla" sublabel="ACTIVIDAD · 1 SERVIDOR" badge={stats ? `${stats.uso}% uso` : ""} active={a.taquilla} onClick={() => onNodeClick("taquilla")} />
+      <DiamondNode x={422} y={130} label="XOR" subLabel="¿Dulces?" active={a.gateway} onClick={() => onNodeClick("gateway")} />
+      <RectNode x={584} y={50} w={160} h={64} label="Comprar" sublabel="ACTIVIDAD · DULCERÍA" active={a.comprar} color={COLORS.yellow} onClick={() => onNodeClick("comprar")} />
+      <RectNode x={584} y={210} w={160} h={64} label="Ir a sala" sublabel="ACTIVIDAD · DIRECTO" active={a.sala} onClick={() => onNodeClick("sala")} />
+      <CircleNode x={742} y={50} label="Fin A" filled={false} color={COLORS.textMuted} active={a.salidaA} onClick={() => onNodeClick("salidaA")} />
+      <CircleNode x={742} y={210} label="Fin B" filled={false} color={COLORS.textMuted} active={a.salidaB} onClick={() => onNodeClick("salidaB")} />
     </svg>
   );
 }
@@ -162,55 +194,52 @@ const STEPS = {
 
 const RESULTS = {
   1: {
+    stats: { llegadas: 50, salidas: 43, uso: 84 },
     metrics: [
-      { key: "λ (tasa llegada)", value: "0.42 cl/min" },
-      { key: "μ (tasa servicio)", value: "0.50 cl/min" },
-      { key: "ρ (utilización)", value: "84.0%" },
-      { key: "Lq (en cola)", value: "4.41 cl" },
-      { key: "Wq (espera cola)", value: "10.50 min" },
-      { key: "W (tiempo sistema)", value: "12.50 min" },
+      { key: "Tiempo de espera", value: "10,5", unit: "min", sub: "Promedio en cola", color: COLORS.blue },
+      { key: "Clientes atendidos", value: "43", unit: "", sub: "de 50 llegadas", color: COLORS.blue },
+      { key: "Utilización servidor", value: "84,0", unit: "%", sub: "Uso del servidor", color: COLORS.green, bar: 84 },
+      { key: "Tiempo en sistema", value: "12,5", unit: "min", sub: "Espera + servicio", color: COLORS.blue },
     ],
-    headers: ["#", "Llegada", "Espera", "Salida", "T.Serv", "En cola"],
+    headers: ["Cliente", "Llegada", "Inicio Serv.", "Fin Serv.", "Espera"],
     rows: [
-      ["1", "0.0", "0.0", "2.3", "2.3", "0"],
-      ["2", "2.8", "0.0", "5.1", "2.3", "0"],
-      ["3", "4.1", "1.0", "7.4", "2.3", "1"],
-      ["4", "5.9", "1.5", "9.7", "2.3", "2"],
-      ["5", "7.3", "2.4", "11.8", "2.5", "1"],
+      ["Cliente 1", "0,0", "0,0", "2,3", "• 0,0"],
+      ["Cliente 2", "2,8", "2,8", "5,1", "• 0,0"],
+      ["Cliente 3", "4,1", "5,1", "7,4", "• 1,0"],
+      ["Cliente 4", "5,9", "7,4", "9,7", "• 1,5"],
+      ["Cliente 5", "7,3", "9,7", "11,8", "• 2,4"],
     ],
   },
   2: {
+    stats: { llegadas: 40, salidas: 37, uso: 76 },
     metrics: [
-      { key: "λ (tasa llegada)", value: "0.38 cl/min" },
-      { key: "Nodos en serie", value: "3" },
-      { key: "T. total prom.", value: "5.8 min" },
-      { key: "Cuello de botella", value: "Taquilla" },
-      { key: "ρ taquilla", value: "76.0%" },
-      { key: "W (sistema)", value: "8.2 min" },
+      { key: "Tiempo total prom.", value: "5,8", unit: "min", sub: "Por cliente", color: COLORS.blue },
+      { key: "Clientes atendidos", value: "37", unit: "", sub: "de 40 llegadas", color: COLORS.blue },
+      { key: "Utilización taquilla", value: "76,0", unit: "%", sub: "Cuello de botella", color: COLORS.green, bar: 76 },
+      { key: "Tiempo en sistema", value: "8,2", unit: "min", sub: "Espera + servicio", color: COLORS.blue },
     ],
-    headers: ["#", "Llegada", "Fin Taq.", "Fin Rev.", "Fin Ent.", "T.Total"],
+    headers: ["Cliente", "Llegada", "Fin Taq.", "Fin Rev.", "Fin Ent.", "T.Total"],
     rows: [
-      ["1", "0.0", "1.8", "2.4", "2.9", "5.1"],
-      ["2", "2.6", "4.4", "5.0", "5.5", "7.9"],
-      ["3", "5.1", "6.3", "7.1", "7.6", "9.4"],
+      ["Cliente 1", "0,0", "1,8", "2,4", "2,9", "5,1"],
+      ["Cliente 2", "2,6", "4,4", "5,0", "5,5", "7,9"],
+      ["Cliente 3", "5,1", "6,3", "7,1", "7,6", "9,4"],
     ],
   },
   3: {
+    stats: { llegadas: 50, salidas: 48, uso: 80 },
     metrics: [
-      { key: "λ (tasa llegada)", value: "0.40 cl/min" },
-      { key: "P(quiere dulces)", value: "55%" },
-      { key: "T. prom. con dulces", value: "6.3 min" },
-      { key: "T. prom. sin dulces", value: "3.9 min" },
-      { key: "W prom. ponderado", value: "5.2 min" },
-      { key: "ρ taquilla", value: "80.0%" },
+      { key: "T. prom. con dulces", value: "6,3", unit: "min", sub: "55% de clientes", color: COLORS.yellow },
+      { key: "T. prom. sin dulces", value: "3,9", unit: "min", sub: "45% de clientes", color: COLORS.blue },
+      { key: "Utilización taquilla", value: "80,0", unit: "%", sub: "Uso del servidor", color: COLORS.green, bar: 80 },
+      { key: "W prom. ponderado", value: "5,2", unit: "min", sub: "Espera + servicio", color: COLORS.blue },
     ],
-    headers: ["#", "Llegada", "Fin Taq.", "¿Dulces?", "Fin Dulc.", "Salida"],
+    headers: ["Cliente", "Llegada", "Fin Taq.", "¿Dulces?", "Fin Dulc.", "Salida"],
     rows: [
-      ["1", "0.0", "2.1", "Sí", "4.5", "6.6"],
-      ["2", "1.4", "3.7", "No", "—", "4.8"],
-      ["3", "3.2", "5.9", "Sí", "8.4", "9.7"],
-      ["4", "5.0", "7.3", "No", "—", "6.8"],
-      ["5", "6.8", "9.2", "Sí", "12.1", "13.4"],
+      ["Cliente 1", "0,0", "2,1", "Sí", "4,5", "6,6"],
+      ["Cliente 2", "1,4", "3,7", "No", "—", "4,8"],
+      ["Cliente 3", "3,2", "5,9", "Sí", "8,4", "9,7"],
+      ["Cliente 4", "5,0", "7,3", "No", "—", "6,8"],
+      ["Cliente 5", "6,8", "9,2", "Sí", "12,1", "13,4"],
     ],
   },
 };
@@ -224,14 +253,17 @@ export default function App() {
   const [simRunning, setSim] = useState(false);
   const [simDone, setSimDone] = useState(false);
   const [tSim, setTSim] = useState("120");
-  const [llegada, setLlegada] = useState("2.4");
-  const [servicio, setServicio] = useState("2.0");
+  const [llegada, setLlegada] = useState("8");
+  const [servicio, setServicio] = useState("12");
+  const [servidores, setServidores] = useState("2");
   const [prob, setProb] = useState("0.55");
   const [log, setLog] = useState([]);
+  const [filterEspera, setFilterEspera] = useState(false);
 
   const steps = STEPS[caso] || [];
   const results = RESULTS[caso];
   const DiagramComp = DIAGRAMS[caso];
+  const casoLabel = CASOS.find((c) => c.id === caso)?.label || "";
 
   useEffect(() => {
     setActiveNode(null);
@@ -239,6 +271,7 @@ export default function App() {
     setSim(false);
     setSimDone(false);
     setLog([]);
+    setFilterEspera(false);
   }, [caso]);
 
   const handleSimulate = () => {
@@ -265,7 +298,6 @@ export default function App() {
   }, [simRunning, stepIndex]);
 
   const handleExport = () => {
-    const casoLabel = CASOS.find((c) => c.id === caso)?.label || "";
     const data = [
       ["PROCSIM — Exportación de resultados"],
       [],
@@ -273,18 +305,19 @@ export default function App() {
       ["Caso", casoLabel],
       ["T. entre llegadas (min)", llegada],
       ["T. de servicio (min)", servicio],
+      ["Servidores", servidores],
       ...(caso === 3 ? [["P(dulces)", prob]] : []),
       ["T. simulación (min)", tSim],
       [],
       ["MÉTRICAS"],
-      ...results.metrics.map((m) => [m.key, m.value]),
+      ...results.metrics.map((m) => [m.key, `${m.value}${m.unit}`]),
       [],
-      ["REGISTRO DE EVENTOS"],
+      ["TRAZA DE EVENTOS"],
       results.headers,
       ...results.rows,
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws["!cols"] = [{ wch: 28 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+    ws["!cols"] = [{ wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Simulación");
     XLSX.writeFile(wb, `procsim_caso${caso}.xlsx`);
@@ -292,172 +325,216 @@ export default function App() {
 
   const activeMap = activeNode ? { [activeNode]: true } : {};
 
-  const input = (label, val, set) => (
-    <div key={label}>
-      <div style={{ fontSize: 10, color: COLORS.textSecondary, marginBottom: 3 }}>{label}</div>
-      <input value={val} onChange={(e) => set(e.target.value)} style={{
-        width: "100%", background: COLORS.inputBg, border: `1px solid ${COLORS.panelBorder}`,
-        borderRadius: 5, padding: "5px 8px", color: COLORS.textPrimary,
-        fontFamily: "JetBrains Mono, monospace", fontSize: 12, boxSizing: "border-box",
-      }} />
-    </div>
-  );
+  const filteredRows = filterEspera
+    ? results.rows.filter((r) => {
+        const espera = r[r.length - 1];
+        const num = parseFloat(String(espera).replace("• ", "").replace(",", "."));
+        return !isNaN(num) && num > 0;
+      })
+    : results.rows;
+
+  const inputStyle = {
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: 8,
+    padding: "8px 12px",
+    fontSize: 15,
+    fontFamily: "Inter, sans-serif",
+    color: COLORS.textPrimary,
+    background: COLORS.white,
+    width: "100%",
+    boxSizing: "border-box",
+    outline: "none",
+  };
+
+  const labelStyle = {
+    fontSize: 14,
+    fontWeight: 500,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+    display: "block",
+  };
+
+  const subLabelStyle = {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 4,
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.textPrimary, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.textPrimary, fontFamily: "Inter, sans-serif" }}>
 
-      {/* Header */}
-      <div style={{ background: COLORS.panel, borderBottom: `1px solid ${COLORS.panelBorder}`, padding: "10px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-        <span style={{ fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: 14, color: COLORS.blue, letterSpacing: 1 }}>PROCSIM</span>
-        <span style={{ color: COLORS.textMuted, fontSize: 11 }}>Simulador de Eventos Discretos</span>
-        <div style={{ flex: 1 }} />
+      {/* Top nav */}
+      <div style={{ background: COLORS.white, borderBottom: `1px solid ${COLORS.border}`, padding: "0 32px", display: "flex", alignItems: "center", gap: 0, position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.blue, padding: "14px 0", marginRight: 32, letterSpacing: 0.5 }}>PROCSIM</div>
         {CASOS.map((c) => (
           <button key={c.id} onClick={() => setCaso(c.id)} style={{
-            padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer",
-            fontFamily: "JetBrains Mono, monospace", fontSize: 11, fontWeight: 600,
-            background: caso === c.id ? COLORS.blue : COLORS.panelBorder,
-            color: caso === c.id ? "#fff" : COLORS.textSecondary,
+            background: "none", border: "none",
+            borderBottom: caso === c.id ? `2px solid ${COLORS.blue}` : "2px solid transparent",
+            color: caso === c.id ? COLORS.blue : COLORS.textSecondary,
+            padding: "14px 18px", cursor: "pointer",
+            fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500,
           }}>
             {c.label}
           </button>
         ))}
       </div>
 
-      {/* Body: 3 columns */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      {/* Page content */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px", display: "flex", flexDirection: "column", gap: 24 }}>
 
-        {/* LEFT: Parameters */}
-        <div style={{
-          width: 200, background: COLORS.panel, borderRight: `1px solid ${COLORS.panelBorder}`,
-          padding: 16, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto",
-        }}>
-          <div style={{ fontSize: 10, color: COLORS.textMuted, fontFamily: "JetBrains Mono, monospace", letterSpacing: 1, textTransform: "uppercase" }}>Parámetros</div>
-          {input("T. entre llegadas (min)", llegada, setLlegada)}
-          {input("T. de servicio (min)", servicio, setServicio)}
-          {caso === 3 && input("P(dulces)", prob, setProb)}
-          {input("T. simulación (min)", tSim, setTSim)}
+        {/* Title */}
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: COLORS.textPrimary }}>
+            Simulación de proceso — {casoLabel.split("—")[1]?.trim()}
+          </h1>
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: COLORS.textSecondary }}>
+            Configura los parámetros y ejecuta una réplica de eventos discretos para el modelo seleccionado.
+          </p>
+        </div>
 
-          <div style={{ flex: 1 }} />
-
-          <button onClick={handleSimulate} disabled={simRunning} style={{
-            background: simRunning ? COLORS.panelBorder : COLORS.blue,
-            border: "none", borderRadius: 7, padding: "9px 0",
-            color: simRunning ? COLORS.textMuted : "#fff",
-            fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: 12,
-            cursor: simRunning ? "not-allowed" : "pointer",
-          }}>
-            {simRunning ? "▶ Simulando..." : "▶ Simular"}
-          </button>
-
-          {/* Event log */}
+        {/* ── SECTION 1: Diagram ── */}
+        <div style={{ background: COLORS.white, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "20px 28px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 1, textTransform: "uppercase" }}>Modelo</span>
+              <span style={{ fontWeight: 600, fontSize: 14, color: COLORS.textPrimary }}>{casoLabel}</span>
+            </div>
+            <span style={{ fontSize: 12, color: COLORS.textMuted }}>
+              {caso === 1 ? "Cola M/M/1 · 1 actividad" : caso === 2 ? "Cola M/M/1 · 3 actividades en serie" : "Cola M/M/1 · Compuerta XOR"}
+            </span>
+          </div>
+          <div style={{ overflowX: "auto", padding: "8px 0 20px" }}>
+            <DiagramComp active={activeMap} onNodeClick={(n) => setActiveNode(activeNode === n ? null : n)} stats={simDone ? results.stats : null} />
+          </div>
+          {/* Log strip */}
           {log.length > 0 && (
-            <div style={{
-              background: COLORS.inputBg, borderRadius: 6, padding: 8,
-              fontSize: 9, fontFamily: "JetBrains Mono, monospace", color: COLORS.green,
-              maxHeight: 160, overflowY: "auto", lineHeight: 1.9,
-              border: `1px solid ${COLORS.panelBorder}`,
-            }}>
-              {log.map((l, i) => <div key={i}>→ {l}</div>)}
-              {simDone && <div style={{ color: COLORS.blue, marginTop: 4 }}>✓ Simulación completa</div>}
+            <div style={{ background: COLORS.panel, borderRadius: 8, padding: "10px 16px", fontSize: 12, color: COLORS.textSecondary, fontFamily: "JetBrains Mono, monospace", lineHeight: 1.8, maxHeight: 100, overflowY: "auto" }}>
+              {log.map((l, i) => <div key={i} style={{ color: i === log.length - 1 ? COLORS.blue : COLORS.textMuted }}>→ {l}</div>)}
+              {simDone && <div style={{ color: COLORS.green, fontWeight: 600 }}>✓ Simulación completa</div>}
             </div>
           )}
+        </div>
 
-          {/* Legend */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8, borderTop: `1px solid ${COLORS.panelBorder}` }}>
+        {/* ── SECTION 2: Config + Metrics ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 }}>
+
+          {/* Config panel */}
+          <div style={{ background: COLORS.white, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 1, textTransform: "uppercase" }}>02</span>
+              <span style={{ fontWeight: 600, fontSize: 15 }}>Configuración</span>
+            </div>
+
             {[
-              { shape: "○", label: "Evento", color: COLORS.blue },
-              { shape: "□", label: "Actividad", color: COLORS.blue },
-              { shape: "◇", label: "Compuerta XOR", color: COLORS.yellow },
-            ].map(({ shape, label, color }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: COLORS.textSecondary }}>
-                <span style={{ color, fontSize: 13 }}>{shape}</span>{label}
+              { label: "Tiempo entre llegadas", sub: "Intervalo promedio entre dos llegadas consecutivas.", unit: "min", val: llegada, set: setLlegada },
+              { label: "Tiempo de servicio", sub: "Duración promedio del servicio.", unit: "min", val: servicio, set: setServicio },
+              { label: "Servidores disponibles", sub: "Número de servidores en paralelo.", unit: "#", val: servidores, set: setServidores },
+              ...(caso === 3 ? [{ label: "P(quiere dulces)", sub: "Probabilidad de ir a dulcería.", unit: "%", val: prob, set: setProb }] : []),
+              { label: "Tiempo de simulación", sub: "Duración total de la corrida.", unit: "min", val: tSim, set: setTSim },
+            ].map(({ label, sub, unit, val, set }) => (
+              <div key={label}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={labelStyle}>{label}</label>
+                  <span style={{ fontSize: 11, color: COLORS.textMuted }}>media · {unit}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input value={val} onChange={(e) => set(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <button onClick={() => set(String(parseFloat(val) + 1))} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 4, background: COLORS.white, width: 24, height: 18, cursor: "pointer", fontSize: 9, color: COLORS.textSecondary }}>▲</button>
+                    <button onClick={() => set(String(Math.max(0, parseFloat(val) - 1)))} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 4, background: COLORS.white, width: 24, height: 18, cursor: "pointer", fontSize: 9, color: COLORS.textSecondary }}>▼</button>
+                  </div>
+                  <span style={{ fontSize: 12, color: COLORS.textMuted, width: 28 }}>{unit}</span>
+                </div>
+                <div style={subLabelStyle}>{sub}</div>
               </div>
             ))}
-          </div>
-        </div>
 
-        {/* CENTER: Diagram */}
-        <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
-          <div style={{ fontSize: 11, color: COLORS.textMuted, fontFamily: "JetBrains Mono, monospace", letterSpacing: 1, textTransform: "uppercase" }}>
-            Modelo — {CASOS.find(c => c.id === caso)?.label}
-          </div>
-          <div style={{
-            background: COLORS.cardBg, borderRadius: 10, border: `1px solid ${COLORS.panelBorder}`,
-            padding: "28px 20px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200,
-          }}>
-            <DiagramComp active={activeMap} onNodeClick={(n) => setActiveNode(activeNode === n ? null : n)} />
-          </div>
-          <div style={{ fontSize: 10, color: COLORS.textMuted, fontFamily: "JetBrains Mono, monospace" }}>
-            Haz click en un nodo para resaltarlo
-          </div>
-        </div>
-
-        {/* RIGHT: Results */}
-        <div style={{
-          width: 340, background: COLORS.panel, borderLeft: `1px solid ${COLORS.panelBorder}`,
-          padding: 16, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 10, color: COLORS.textMuted, fontFamily: "JetBrains Mono, monospace", letterSpacing: 1, textTransform: "uppercase" }}>
-              Resultados
-            </div>
-            <button onClick={handleExport} style={{
-              background: COLORS.green, border: "none", borderRadius: 5,
-              padding: "5px 12px", color: "#0F1117",
-              fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: 10,
-              cursor: "pointer",
+            <button onClick={handleSimulate} disabled={simRunning} style={{
+              background: simRunning ? COLORS.border : COLORS.blue,
+              border: "none", borderRadius: 9, padding: "11px 0",
+              color: simRunning ? COLORS.textMuted : COLORS.white,
+              fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 14,
+              cursor: simRunning ? "not-allowed" : "pointer", marginTop: 4,
             }}>
-              ⬇ Exportar Excel
+              {simRunning ? "▶  Simulando..." : "▶  Ejecutar simulación"}
             </button>
           </div>
 
-          {/* Metric cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {results.metrics.map(({ key, value }) => (
-              <div key={key} style={{
-                background: COLORS.cardBg, border: `1px solid ${COLORS.panelBorder}`,
-                borderRadius: 8, padding: "10px 12px",
-              }}>
-                <div style={{ fontSize: 9, color: COLORS.textSecondary, marginBottom: 4, fontFamily: "JetBrains Mono, monospace" }}>{key}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.blue, fontFamily: "JetBrains Mono, monospace" }}>{value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Table */}
-          <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, overflow: "hidden" }}>
-            <div style={{ padding: "10px 14px", borderBottom: `1px solid ${COLORS.panelBorder}`, fontSize: 10, color: COLORS.textSecondary, fontFamily: "JetBrains Mono, monospace" }}>
-              Registro de eventos
+          {/* Metrics */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {results.metrics.map(({ key, value, unit, sub, color, bar }) => (
+                <div key={key} style={{ background: COLORS.white, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "18px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block" }} />
+                    <span style={{ fontSize: 12, color: COLORS.textSecondary }}>{key}</span>
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.textPrimary, lineHeight: 1 }}>
+                    {value}<span style={{ fontSize: 14, fontWeight: 400, color: COLORS.textSecondary, marginLeft: 3 }}>{unit}</span>
+                  </div>
+                  {bar !== undefined && (
+                    <div style={{ marginTop: 10, background: COLORS.border, borderRadius: 4, height: 5 }}>
+                      <div style={{ width: `${bar}%`, height: "100%", background: COLORS.green, borderRadius: 4 }} />
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 6 }}>{sub}</div>
+                </div>
+              ))}
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: COLORS.inputBg }}>
-                    {results.headers.map((h) => (
-                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 9, fontFamily: "JetBrains Mono, monospace", color: COLORS.textMuted, fontWeight: 600, textTransform: "uppercase" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.rows.map((row, i) => (
-                    <tr key={i} style={{ borderTop: `1px solid ${COLORS.panelBorder}`, background: i % 2 === 0 ? "transparent" : `${COLORS.inputBg}55` }}>
-                      {row.map((cell, j) => (
-                        <td key={j} style={{
-                          padding: "7px 10px", fontFamily: "JetBrains Mono, monospace", fontSize: 11,
-                          color: cell === "Sí" ? COLORS.yellow : cell === "No" ? COLORS.textSecondary : COLORS.textPrimary,
-                        }}>{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: "JetBrains Mono, monospace" }}>
-            * T.sim = {tSim} min · Distribución exponencial · M/M/1
           </div>
         </div>
+
+        {/* ── SECTION 3: Event trace ── */}
+        <div style={{ background: COLORS.white, borderRadius: 12, border: `1px solid ${COLORS.border}`, overflow: "hidden" }}>
+          <div style={{ padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 1, textTransform: "uppercase" }}>03</span>
+              <span style={{ fontWeight: 600, fontSize: 15 }}>Traza de eventos</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleExport} style={{
+                background: COLORS.green, border: "none", borderRadius: 6,
+                padding: "5px 16px", color: COLORS.white,
+                fontFamily: "Inter", fontWeight: 600, fontSize: 12, cursor: "pointer",
+              }}>
+                ⬇ Exportar Excel
+              </button>
+            </div>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: COLORS.panel }}>
+                {results.headers.map((h) => (
+                  <th key={h} style={{ padding: "10px 24px", textAlign: "left", fontSize: 11, color: COLORS.textMuted, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row, i) => (
+                <tr key={i} style={{ borderTop: `1px solid ${COLORS.border}` }}>
+                  {row.map((cell, j) => {
+                    const isEspera = j === row.length - 1 && String(cell).startsWith("•");
+                    const isDulces = cell === "Sí" || cell === "No";
+                    return (
+                      <td key={j} style={{
+                        padding: "12px 24px", fontSize: 13,
+                        color: isEspera ? COLORS.green : isDulces && cell === "Sí" ? COLORS.yellow : COLORS.textPrimary,
+                        fontWeight: j === 0 ? 500 : 400,
+                      }}>
+                        {isEspera ? <span style={{ color: COLORS.green }}>● {String(cell).replace("• ", "")}</span> : cell}
+                        {j === 1 && i < 2 && <span style={{ marginLeft: 8, fontSize: 10, color: COLORS.textMuted, background: COLORS.panel, borderRadius: 4, padding: "2px 6px" }}>M{i + 1}</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ padding: "12px 24px", borderTop: `1px solid ${COLORS.border}`, fontSize: 11, color: COLORS.textMuted }}>
+            * T.sim = {tSim} min · Distribución exponencial · {servidores} servidor(es)
+          </div>
+        </div>
+
       </div>
     </div>
   );
